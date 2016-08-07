@@ -1,5 +1,7 @@
 /**
- *  Osram LIGHTIFY GardenSpot Mini rgb - AAP Version
+ *  Osram LIGHTIFY GardenSpot Mini rgb - AAP Version 
+ *
+ *  Version 1.1 - fixed on/off from tile
  *
  *  - For use with directly connecting the US (Z HA) versions to SmartThings
  *  
@@ -12,7 +14,7 @@
  *	- Device Tile also contains buttons for (1) "hueLoop" (boolean "on" / "off" values) and  
  *     (2) "Random Hue" (causes hue to change to a random color).  Use these in CoRE to create color loop.
  *
- *  Copyright 2016 SmartThings 
+ *  Copyright 2016 Anthony Pastor
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -39,26 +41,18 @@ metadata {
 		capability "Sensor"
        
         command "setAdjustedColor"
-        command "startLoop"
-        command "stopLoop"
         command "setLoopTime"
-        command "setDirection"
 		command "setHueLoop"
         command "setRandomHue"
         command "setTransitionTime"
-        
-        command "alert"
         command "toggle"
         
         // This is a new temporary counter to keep track of no responses
-        attribute "unreachable", "number"
+    
         attribute "colorMode", "string"
         attribute "colorName", "string"
         attribute "switchColor", "string"
-        attribute "loopActive", "string"
-        attribute "loopDirection", "string"
         attribute "loopTime", "number"
-        attribute "alert", "string"
         attribute "level", "number"
         attribute "hue", "number"
         attribute "hueLoop", "string"	
@@ -86,36 +80,36 @@ metadata {
 	tiles (scale: 2){
 		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
         	tileAttribute("device.switchColor", key: "PRIMARY_CONTROL") {
-				attributeState "off", label: '${currentValue}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-            	attributeState "Red", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff0000"
-            	attributeState "Brick Red", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff3700"
-    			attributeState "Safety Orange", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff6F00"
-    			attributeState "Dark Orange", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff9900"
-            	attributeState "Amber", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ffbf00"
-            	attributeState "Gold", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ffe1000"
-            	attributeState "Yellow", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ffff00"
-    			attributeState "Electric Lime", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#bfff00"
-            	attributeState "Lawn Green", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#88ff00"
-            	attributeState "Bright Green", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#48ff00"
-            	attributeState "Lime", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00ff11"
-            	attributeState "Spring Green", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00ff6a"
-            	attributeState "Turquoise", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00ffd0"
-            	attributeState "Aqua", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00ffff"
-            	attributeState "Sky Blue", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00bfff"
-            	attributeState "Dodger Blue", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#007bff"
-            	attributeState "Navy Blue", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#0050ff"
-            	attributeState "Blue", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#0000ff"
-            	attributeState "Han Purple", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#3b00ff"
-            	attributeState "Electric Indigo", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#6600ff"
-            	attributeState "Electric Purple", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#b200ff"
-            	attributeState "Orchid Purple", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#e900ff"
-            	attributeState "Magenta", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff00dc"
-            	attributeState "Hot Pink", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff00aa"
-            	attributeState "Deep Pink", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff007b"
-            	attributeState "Raspberry", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff0061"
-            	attributeState "Crimson", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#ff003b"
-            	attributeState "White", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-                attributeState "Color Loop", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+				attributeState "off", label: '${currentValue}', action: "on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+            	attributeState "Red", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff0000"
+            	attributeState "Brick Red", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff3700"
+    			attributeState "Safety Orange", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff6F00"
+    			attributeState "Dark Orange", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff9900"
+            	attributeState "Amber", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ffbf00"
+            	attributeState "Gold", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ffe1000"
+            	attributeState "Yellow", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ffff00"
+    			attributeState "Electric Lime", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#bfff00"
+            	attributeState "Lawn Green", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#88ff00"
+            	attributeState "Bright Green", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#48ff00"
+            	attributeState "Lime", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#00ff11"
+            	attributeState "Spring Green", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#00ff6a"
+            	attributeState "Turquoise", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#00ffd0"
+            	attributeState "Aqua", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#00ffff"
+            	attributeState "Sky Blue", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#00bfff"
+            	attributeState "Dodger Blue", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#007bff"
+            	attributeState "Navy Blue", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#0050ff"
+            	attributeState "Blue", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#0000ff"
+            	attributeState "Han Purple", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#3b00ff"
+            	attributeState "Electric Indigo", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#6600ff"
+            	attributeState "Electric Purple", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#b200ff"
+            	attributeState "Orchid Purple", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#e900ff"
+            	attributeState "Magenta", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff00dc"
+            	attributeState "Hot Pink", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff00aa"
+            	attributeState "Deep Pink", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff007b"
+            	attributeState "Raspberry", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff0061"
+            	attributeState "Crimson", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#ff003b"
+            	attributeState "White", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+                attributeState "Color Loop", label: '${currentValue}', action: "off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
 			}
             tileAttribute ("device.color", key: "COLOR_CONTROL") {
             	attributeState "color", action: "setAdjustedColor"
@@ -141,9 +135,7 @@ metadata {
         }    
         standardTile("hueLoop", "device.hueLoop", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
         	state "on", label: 'Hue Loop On', action: "setHueLoop", backgroundColor: "#ab1552", nextState: "off"
-//            state "startingHueLoop", label: "Starting", action: "setHueLoop", backgroundColor: "#79b821", nextState: "stoppingHueLoop"
 			state "off", label:'Hue Loop Off', action: "setHueLoop", backgroundColor: "#ffffff", nextState: "on"
-//            state "stoppingHueLoop", label: "Stopping", action: "setHueLoop", backgroundColor: "#ffffff", nextState: "startingHueLoop"
         }
         standardTile("hueRandom", "device.hueRandom", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
         	state "hueRandom", label: 'Random Hue', action: "setRandomHue"
@@ -172,27 +164,14 @@ metadata {
         valueTile("colorMode", "device.colorMode", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
             state "colorMode", label: '${currentValue}'
         }
-        standardTile("loop", "device.loopActive", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "Active", label:'${currentValue}', action: "stopLoop", backgroundColor: "#79b821", nextState: "stoppingLoop"
-            state "startingLoop", label: "Starting Loop", action: "stopLoop", backgroundColor: "#79b821", nextState: "stoppingLoop"
-			state "Inactive", label:'${currentValue}', action: "startLoop", backgroundColor: "#ffffff", nextState: "startingLoop"
-            state "stoppingLoop", label: "Stopping Loop", action: "startLoop", backgroundColor: "#ffffff", nextState: "startingLoop"
+         controlTile("loopTimeSlider", "device.sliderLT", "slider", height: 1, width: 3, inactiveLabel: false, range: "1..60") {
+			state "sliderLT", action:"setLoopTime"
 		}
-        controlTile("loopTimeControl", "device.loopTime", "slider", height: 2, width: 4, range: "(1..60)", inactiveLabel: false) {
-        	state "loopTime", action: "setLoopTime"
-        }
-        standardTile("loopDir", "device.loopDirection", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-        	state "default", label: '${currentValue}', action: "setDirection"
-        }
-        standardTile("alert", "device.alertStatus", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "Blink", label:'Blink', action: "alertBreathe",nextState: "Breathe"
-            state "Breathe", label:'Breathe', action: "alertOkay", nextState: "Okay"
-			state "Okay", label:'Okay', action: "alertStop", nextState: "Stop"
-            state "Stop", label:'Stop', action: "alertBlink", nextState: "Blink"
-		}   
-        
+		valueTile("loopTime", "device.loopTime", height: 1, width: 3, inactiveLabel: false, decoration: "flat") {
+            state "loopTime", label: 'LoopTime: ${currentValue} Mins'
+        }    
 		main(["switch"])
-		details(["switch", "levelSliderControl", "level", "hueSliderControl", "hue", "satSliderControl", "saturation", "transTimeSliderControl", "transitionTime",  "hueLoop", "hueRandom","refresh"])	//"colorTempSliderControl", "colorTemp", "loop", "loopTimeControl", "loopDir", "colorMode", "alert",
+		details(["switch", "levelSliderControl", "level", "hueSliderControl", "hue", "satSliderControl", "saturation", "transTimeSliderControl", "transitionTime", "hueLoop", "hueRandom","refresh"])	//"loopTimeSlider", "loopTime",
 	}
 }
 
@@ -200,7 +179,7 @@ metadata {
 def parse(String description) {
    log.info "description is $description"
     
-//    sendEvent(name: "unreachable", value: 0)
+
     if (device.currentValue("loopActive") == "Active") { 
     }
     else {
@@ -224,7 +203,7 @@ def parse(String description) {
     }
     else if (description?.startsWith("read attr -")) {
         def descMap = parseDescriptionAsMap(description)
-       // log.trace "descMap : $descMap"
+
 
         if (descMap.cluster == "0300") {
             if(descMap.attrId == "0000"){  //Hue Attribute
@@ -284,206 +263,65 @@ def parseDescriptionAsMap(description) {
     }
 }
 
-def on(onTime = null) {
-	// just assume it works for now
-	log.debug "on()"
-	   
-    if (onTime) {
-    	def newTime = onTime * 10
-		def finalHex = swapEndianHex(hexF(newTime, 4))
-        runIn(onTime, refresh)
-        "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0x42 {00 ${finalHex} 0000}"
-    }
-    else {
-    	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
-    }
-    
-	sendEvent(name: "switch", value: "on")
-    sendEvent(name: "switchColor", value: ( device.currentValue("colorMode") == "White" ? "White" : device.currentValue("colorName")), displayed: false, isStateChange: true)
+def on() {
+	log.debug "on()"   
+	def level = state.level ?: 100
+    setLevel(level)
 }
 
 def off() {
-	// just assume it works for now
+
 	log.debug "off()"
-//	sendEvent(name: "loopActive", value: "Inactive")
-    sendEvent(name: "switch", value: "off")
-    sendEvent(name: "switchColor", value: "off", displayed: false, isStateChange: true)
-	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
+    state.level = this.device.currentValue("level") ?: 100
+	zigbee.command(0x0006, 0x00)
+
 }
 
 def toggle() {
 	if (device.currentValue("switch") == "on") {
+		setLevel(0)
 		sendEvent(name: "switch", value: "off")
-		sendEvent(name: "switchColor", value: "off")
+		sendEvent(name: "switchColor", value: "off", displayed: false, isStateChange: true)
 	}
 	else {
-		sendEvent(name: "switch", value: "on")
+		def level = this.device.currentValue("level") ?: 100    
+		setLevel(level)
+        sendEvent(name: "switch", value: "on")
 		sendEvent(name: "switchColor", value: ( device.currentValue("colorMode") == "White" ? "White" : device.currentValue("colorName")), displayed: false, isStateChange: true)
 	}
-	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 2 {}"
+
 }
 
-
-def alert(action) {
-	def value = "00"
-	def valid = true
-//    def curState = device.currentValue("alert")
-    
-	switch(action) {
-		case "Blink":
-			value = "00"
-			break
-		case "Breathe":
-			value = "01"
-			break
-		case "Okay":
-			value = "02"
-			break
-		case "Stop":
-			value = "ff"
-			break
-		default:
-			valid = false
-			break
-	}
-	if (valid) {
-		log.debug "Alert: ${action}, Value: ${value}"
-		sendEvent(name: "alert", value: action, displayed: true, isStateChange: true)
-		"st cmd 0x${device.deviceNetworkId} ${endpointId} 3 0x40 {${value} 00}"
-	}
-	else { log.debug "Invalid action" }
-}
-
-/**
-def setDirection() {
-	def direction = (device.currentValue("loopDirection") == "Down" ? "Up" : "Down")
-    log.trace direction
-	sendEvent(name: "loopDirection", value: direction, isStateChange: true)
-	if (device.currentValue("loopActive") == "Active") {
-		def dirHex = (direction == "Down" ? "00" : "01")
-        log.trace dirHex
-		"st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x44 {02 01 ${dirHex} 0000 0000}"
-	}
-}
-
-def setLoopTime(value) {
-	sendEvent(name:"loopTime", value: value, isStateChange: true)
-	if (device.currentValue("loopActive") == "Active") {
-		def finTime = swapEndianHex(hexF(value, 4))
-		"st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x44 {04 01 00 ${finTime} 0000}"
-	}
-}
-
-**/
 
 def setHueLoop() {
+    log.trace "setHueLoop()"
 	if (device.currentValue("hueLoop") == "off") {
-    	log.trace "hueLoop is now ON."
-		sendEvent(name: "hueLoop", value: "on", inStateChange: true)
+//		def loopT = device.currentValue("loopTime") ?: 5
+		sendEvent(name: "hueLoop", value: "on", displayed:true, isStateChange: true)
+		log.trace "hueLoop is now ON."	// - randomize every ${loopT} minutes."
+        
+//        unschedule
+//        runIn(loopT*60, setRandomHue)
+        
 	} else {
     	log.trace "hueLoop is now OFF."    
-		sendEvent(name: "hueLoop", value: "off", inStateChange: true)	
+		sendEvent(name: "hueLoop", value: "off", displayed:true, isStateChange: true)	
+//		unschedule
     }
-    
-//	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 2 {}"
-//	sendEvent(name:"hueLoop", value: "On", isStateChange: true)
-//    log.debug "sethueLoop: device.currentValue('${hueLoop}')"
 }
 
-/**
-def startLoop(Map params) {
-	// direction either increments or decrements the hue value: "Up" will increment, "Down" will decrement
-	def direction = (device.currentValue("loopDirection") != null ? (device.currentValue("loopDirection") == "Down" ? "00" : "01") : "00")
-	log.trace direction
-    	if (params?.direction != null) {
-		direction = (params.direction == "Down" ? "00" : "01")
-		sendEvent(name: "loopDirection", value: params.direction, isStateChange: true )
+def setLoopTime(loopT) {
+	log.trace "loopTime(${loopT}) minutes."
+    sendEvent(name: "loopTime", value: loopT, displayed:true, isStateChange: true)    
+    sendEvent(name: "sliderLT", value: loopT, displayed:true, isStateChange: true)        
+    if (device.currentValue("hueLoop") == "on") {
+    	log.trace "Adjusting existing hueLoop."
+        unschedule
+        runIn(loopT*60, setRandomHue)
 	}
-	log.trace direction
-	
-	// time parameter is the time in seconds for a full loop
-	def cycle = (device.currentValue("loopTime") != null ? device.currentValue("loopTime") : 2)
-	log.trace cycle
-    	if (params?.time != null) {
-		cycle = params.time
-		if (cycle >= 1 && cycle <= 60) {sendEvent(name:"loopTime", value: cycle, isStateChange: true)}
-	}
-	log.trace cycle
-    	def finTime = swapEndianHex(hexF(cycle, 4))
-	log.trace finTime
-	
-	def cmds = []
-	cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
-    cmds << "delay 200"
-    	
-	sendEvent(name: "switchColor", value: "Color Loop", displayed: false)
-    sendEvent(name: "loopActive", value: "Active", isStateChange: true)
-    	
-	if (params?.hue != null) {  
-		
-		// start hue was specified, so convert to enhanced hue and start loop from there
-		def sHue = Math.min(Math.round(params.hue * 255 / 100), 255)
-		finHue = swapEndianHex(hexF(sHue, 4))
-		log.debug "activating color loop from specified hue"
-		cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x44 {0F 01 ${direction} ${finTime} ${sHue}}"
-        
-	}
-	else {
-		       
-        // start hue was not specified, so start loop from current hue updating direction and time
-		log.debug "activating color loop from current hue"
-		cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x44 {07 02 ${direction} ${finTime} 0000}"
-		
-	}
-	cmds
 }
 
-def stopLoop() {
-	
-	log.debug "deactivating color loop"
-	def cmds = [
-		"st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x44 {01 00 00 0000 0000}", "delay 200",
-        "st rattr 0x${device.deviceNetworkId} ${endpointId} 0x0300 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} ${endpointId} 0x0300 1", "delay 200",
-        "st rattr 0x${device.deviceNetworkId} ${endpointId} 0x0300 7","delay 200",
-        "st rattr 0x${device.deviceNetworkId} ${endpointId} 0x0300 8", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} ${endpointId} 8 0"
-        ]
-	sendEvent(name: "loopActive", value: "Inactive", isStateChange: true)
-	
-	cmds
-	
-}
-**/
 
-
-def setColorTemperature(value) {
-    if(value<101){
-        value = (value*38) + 2700		//Calculation of mapping 0-100 to 2700-6500
-    }
-	def duration = (this.device.currentValue("transitionTime") * 10) ?: 32
-    def transitionTime = swapEndianHex(hexF(duration,4))
-    
-    def tempInMired = Math.round(1000000/value)
-    def finalHex = swapEndianHex(hexF(tempInMired, 4))
-   // def genericName = getGenericName(value)
-   // log.debug "generic name is : $genericName"
-
-    def cmds = []
-    
-    if (device.latestValue("switch") == "off") {
-        cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
-        cmds << "delay 150"
-    }
-    sendEvent(name: "colorTemperature", value: value, displayed:false)
-    sendEvent(name: "colorMode", value: "White")
-    sendEvent(name: "switchColor", value: "White", displayed: false, isStateChange: true)
-   // sendEvent(name: "colorName", value: genericName)
-
-    cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x0300 0x0a {${finalHex} ${transitionTime}}"
-
-    cmds
-}
 
 def setTransitionTime(inTime) {
 	def transitionTime = ( inTime / 10 )
@@ -534,7 +372,7 @@ def setLevel(value) {
     }
 
 
-    sendEvent(name: "level", value: state.levelValue, isStateChange: true)
+    sendEvent(name: "level", value: state.level, isStateChange: true)
     def scaledLevel = hex(state.levelValue * 255 / 100)
     cmds <<  "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${scaledLevel} ${transitionTime}}"
 
@@ -595,40 +433,16 @@ def setColor(value){
     
     if (value.switch == "off") {
         cmd << "delay 150"
-        cmd << off()
+        cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
     }
 
     cmd
     }
 }
-/**
-def setSaturation(Integer value, duration = 32) {
-	
-    def transitionTime = swapEndianHex(hexF(duration,4))
-	def max = 0xfe
-   // log.trace "setSaturation($value)"
-	sendEvent(name: "saturation", value: value)
-	def scaledValue = Math.round(value * max / 100.0)
-	def cmd = "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x03 {${hex(scaledValue)} ${transitionTime}}"
-	//log.info cmd
-	cmd
-}
-**/
+
 
 def refresh() {
-/**
-    def unreachable = device.currentValue("unreachable")
-    if(unreachable == null) { 
-    	sendEvent(name: 'unreachable', value: 1)
-    }
-    else { 
-    	sendEvent(name: 'unreachable', value: unreachable + 1)
-    }
-    if(unreachable > 2) { 
-    	sendEvent(name: "switch", value: "off")
-        sendEvent(name: "switchColor", value: "off", displayed: false)
-    }
-**/    
+
 // Ping the device with color as to not get out of sync 
     [
 	"st rattr 0x${device.deviceNetworkId} ${endpointId} 6 0", "delay 500",
@@ -662,7 +476,7 @@ def configure(){
 }
 
 //input Hue Integer values; returns color name for saturation 100%
-private getColorName(hueValue){
+def getColorName(hueValue){
     if(hueValue>360 || hueValue<0)
         return
 
@@ -758,56 +572,7 @@ private getColorName(hueValue){
 
     colorName
 }
-/**
-def setLevel(level) {
-	def hue = this.device.currentValue("hue") ?: 23
-    def sat = this.device.currentValue("saturation") ?: 100
-	setColor([level:level, saturation:sat, hue:hue, switch:"on"])
-}
 
-
-// adding duration to enable transition time adjustments
-def setLevel(value, duration = 21) {
-	log.trace "setLevel($value)"
-    def transitionTime = swapEndianHex(hexF(duration,4))
-    
-    
-    def unreachable = device.currentValue("unreachable")
-    log.debug unreachable
-    if(unreachable == null) { 
-    	sendEvent(name: 'unreachable', value: 1)
-    }
-    else { 
-    	sendEvent(name: 'unreachable', value: unreachable + 1)
-    }
-    if(unreachable > 2) { 
-    	sendEvent(name: "switch", value: "off")
-        sendEvent(name: "switchColor", value: "off", displayed: false)
-    }
-
-
-	def cmds = []
-
-	if (value == 0) {
-		sendEvent(name: "switch", value: "off")
-        sendEvent(name: "switchColor", value: "off", displayed: false)
-		cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
-	}
-	else if (device.currentValue("switch") == "off" && unreachable < 2) {
-		sendEvent(name: "switch", value: "on")
-        log.debug device.currentValue("colorMode")
-        sendEvent(name: "switchColor", value: (device.currentValue("colorMode") == "White" ? "White" : device.currentValue("colorName")), displayed: false)
-	}
-
-	sendEvent(name: "level", value: value)
-	def level = hex(value * 2.55)
-    if(value == 1) { level = hex(1) }
-	cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${level} ${transitionTime}}"
-
-	//log.debug cmds
-	cmds
-}
-**/
 
 private getEndpointId() {
 	new BigInteger(device.endpointId, 16).toString()
