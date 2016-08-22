@@ -293,7 +293,8 @@ def toggle() {
 }
 
 
-def setHueLoop() {
+def setHueLoop(duration = null) {
+	if (duration) setLoopTime (duration)
     log.trace "setHueLoop()"
 	if (device.currentValue("hueLoop") == "off") {
 //		def loopT = device.currentValue("loopTime") ?: 5
