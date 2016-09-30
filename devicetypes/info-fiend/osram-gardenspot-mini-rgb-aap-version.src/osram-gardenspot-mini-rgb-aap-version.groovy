@@ -2,6 +2,9 @@
  *  Osram LIGHTIFY GardenSpot Mini rgb - AAP Version 
  *
  *  Version 1.1 - fixed on/off from tile
+ *	Version 1.2 - modified setHueLoop() to accept parameter for setLoopTime()
+ *	Version 1.2b - bug fixes
+ *  
  *
  *  - For use with directly connecting the US (Z HA) versions to SmartThings
  *  
@@ -175,6 +178,16 @@ metadata {
 	}
 }
 
+// Globals
+
+private getATTRIBUTE_HUE() { 0x0000 }
+private getATTRIBUTE_SATURATION() { 0x0001 }
+private getHUE_COMMAND() { 0x00 }
+private getSATURATION_COMMAND() { 0x03 }
+private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
+private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
+
+
 // Parse incoming device messages to generate events
 def parse(String description) {
    log.info "description is $description"
@@ -205,48 +218,53 @@ def parse(String description) {
         def descMap = parseDescriptionAsMap(description)
 
 
-        if (descMap.cluster == "0300") {
+        if (descMap.cluster == "0300") {  // COLOR CONTROL CLUSTER
+        
             if(descMap.attrId == "0000"){  //Hue Attribute
+            
                 def hueValue = Math.round(convertHexToInt(descMap.value) / 255 * 100)
                 log.debug "Hue value returned is $hueValue"
                 def colorName = getColorName(hueValue)
     			sendEvent(name: "colorName", value: colorName, isStateChange: true)
                 if (device.currentValue("switch") == "on") { sendEvent(name: "switchColor", value: ( device.currentValue("colorMode") == "White" ? "White" : device.currentValue("colorName")), displayed: false) }
                 sendEvent(name: "hue", value: hueValue, displayed:false)
-            }
-            else if(descMap.attrId == "0001"){ //Saturation Attribute
+                
+            } else if(descMap.attrId == "0001"){ //Saturation Attribute
+            
                 def saturationValue = Math.round(convertHexToInt(descMap.value) / 255 * 100)
                 log.debug "Saturation from refresh is $saturationValue"
                 sendEvent(name: "saturation", value: saturationValue, displayed:false)
-            }
-            else if( descMap.attrId == "0007") {
+                
+            } else if( descMap.attrId == "0007") {  //Color Temp Attribute
                 def tempInMired = convertHexToInt(descMap.value)
             	def tempInKelvin = Math.round(1000000/tempInMired)
                 log.debug "Color temperature returned is $tempInKelvin"
             	sendEvent(name: "colorTemperature", value: tempInKelvin, isStateChange: true)
-            }
-            else if( descMap.attrId == "0008") {
+                
+            } else if( descMap.attrId == "0008") {
+            
             	def colorModeValue = (descMap.value == "02" ? "White" : "Color")
                 log.debug "Color mode returned $colorModeValue"
                 sendEvent(name: "colorMode", value: colorModeValue, isStateChange: true)
+                
                 if (device.currentValue("switch") == "on") {
-                	sendEvent(name: "switchColor", value: (descMap.value == "02" ? "White" : device.currentValue("colorName")), displayed: false, isStateChange: true)
+                	sendEvent(name: "switchColor", value: (descMap.value == "02" ? "White" : device.currentValue("colorName")), displayed: false)
                 }
             }
-        }
-        else if(descMap.cluster == "0008"){
+            
+        } else if(descMap.cluster == "0008"){
             def dimmerValue = Math.round(convertHexToInt(descMap.value) * 100 / 255)
             log.debug "dimmer value is $dimmerValue"
             sendEvent(name: "level", value: dimmerValue, isStateChange: true)
         }
-    }
-    else {
+        
+    } else {
         def name = description?.startsWith("on/off: ") ? "switch" : null
         def value = null
         if (name == "switch") {
             value = (description?.endsWith(" 1") ? "on" : "off")
         	log.debug value
-            sendEvent(name: "switchColor", value: (value == "off" ? "off" : device.currentValue("colorName")), displayed: false, isStateChange: true)
+            sendEvent(name: "switchColor", value: (value == "off" ? "off" : device.currentValue("colorName")), displayed: false)
         }
         else { value = null }
         def result = createEvent(name: name, value: value)
@@ -266,6 +284,10 @@ def parseDescriptionAsMap(description) {
 def on() {
 	log.debug "on()"   
 	def level = state.level ?: 100
+	
+    sendEvent(name: "switch", value: "on")
+	sendEvent(name: "switchColor", value: ( device.currentValue("colorMode") == "White" ? "White" : device.currentValue("colorName")), displayed: false, isStateChange: true)    
+    
     setLevel(level)
 }
 
@@ -273,93 +295,108 @@ def off() {
 
 	log.debug "off()"
     state.level = this.device.currentValue("level") ?: 100
-	zigbee.command(0x0006, 0x00)
+	
+    sendEvent(name: "switch", value: "off")
+	sendEvent(name: "switchColor", value: "off", displayed: false, isStateChange: true)
+	setLevel(0)
 
 }
 
 def toggle() {
 	if (device.currentValue("switch") == "on") {
-		setLevel(0)
-		sendEvent(name: "switch", value: "off")
-		sendEvent(name: "switchColor", value: "off", displayed: false, isStateChange: true)
+        off()
 	}
 	else {
-		def level = this.device.currentValue("level") ?: 100    
-		setLevel(level)
-        sendEvent(name: "switch", value: "on")
-		sendEvent(name: "switchColor", value: ( device.currentValue("colorMode") == "White" ? "White" : device.currentValue("colorName")), displayed: false, isStateChange: true)
+		on()
 	}
-
 }
 
 
-def setHueLoop(duration = null) {
-	if (duration) setLoopTime (duration)
-    log.trace "setHueLoop()"
-	if (device.currentValue("hueLoop") == "off") {
-//		def loopT = device.currentValue("loopTime") ?: 5
-		sendEvent(name: "hueLoop", value: "on", displayed:true, isStateChange: true)
+def setHueLoop(duration) {
+    log.trace "setHueLoop(${duration})"
+    if (duration) {
+    	log.trace "calling setLoopTime(${duration})"
+        setLoopTime(duration)
+    }    
+	
+    if (device.currentValue("hueLoop") == "off") {
 		log.trace "hueLoop is now ON."	// - randomize every ${loopT} minutes."
+        sendEvent(name: "hueLoop", value: "on", displayed:true, isStateChange: true)
         
-//        unschedule
-//        runIn(loopT*60, setRandomHue)
+		def loopT = device.currentValue("loopTime") ?: 5       
+        log.trace "setHueLoop found loopTime of ${loopT}.  Now calling setRandomHue"
+                
+        setRandomHue()
+        
+        unschedule
+        runIn(loopT*60, setRandomHue)
         
 	} else {
     	log.trace "hueLoop is now OFF."    
 		sendEvent(name: "hueLoop", value: "off", displayed:true, isStateChange: true)	
-//		unschedule
+		unschedule
     }
 }
 
 def setLoopTime(loopT) {
 	log.trace "loopTime(${loopT}) minutes."
     sendEvent(name: "loopTime", value: loopT, displayed:true, isStateChange: true)    
-    sendEvent(name: "sliderLT", value: loopT, displayed:true, isStateChange: true)        
+    sendEvent(name: "sliderLT", value: loopT, displayed:false, isStateChange: true)        
+    
+    def newLoopTime = this.device.currentValue("loopTime") ?: 3
+    log.debug "setLoopTime: loopTime is now ${newLoopTime} minutes."
+    
     if (device.currentValue("hueLoop") == "on") {
-    	log.trace "Adjusting existing hueLoop."
+    	log.trace "setLoopTime: hueLoop is ON, so scheduling setRandomHue."
         unschedule
         runIn(loopT*60, setRandomHue)
 	}
 }
 
 
-
 def setTransitionTime(inTime) {
 	def transitionTime = ( inTime / 10 )
 	log.trace "transitionTime = ${transitionTime} seconds."
-    sendEvent(name: "sliderTT", value: inTime, displayed:false)
-    sendEvent(name: "transitionTime", value: transitionTime, displayed:true, inStateChange: true)
+    sendEvent(name: "sliderTT", value: inTime, displayed:false, isStateChange: true)
+    sendEvent(name: "transitionTime", value: transitionTime, displayed:true, isStateChange: true)
 }
 
-def setHue(hue) {
-	log.trace "setHue($hue)"
+def setHue(inHue) {
+	log.trace "setHue($inHue)"
 	def sat = this.device.currentValue("saturation") ?: 100
-    def level = this.device.currentValue("level") ?: 100
-	setColor([level:level, saturation:sat, hue:hue, switch:"on"])
+    def lvl = this.device.currentValue("level") ?: 100
+	setColor([level:lvl, saturation:sat, hue:inHue, switch:"on"])
 }
 
 def setRandomHue() {
 	def rHue = new Random().nextInt(100) + 1
-	log.trace "Random hue is ${rHue}."
+    sendEvent(name: "hueRandom", value: rHue, displayed:true, isStateChange: true)
+	log.trace "New random hue is ${rHue}.  Calling setColor."
     
 	def sat = this.device.currentValue("saturation") ?: 100
-    def level = this.device.currentValue("level") ?: 100
+    def lvl = this.device.currentValue("level") ?: 100
 
-	setColor([level:level, saturation:sat, hue:rHue, switch:"on"])
+	setColor([level:lvl, saturation:sat, hue:rHue, switch:"on"])
 
 }
 
 def setSaturation(sat) {
 	log.trace "setSaturation($sat)"
     def hue = this.device.currentValue("hue") ?: 70
-    def level = this.device.currentValue("level") ?: 100
-	setColor([level:level, saturation:sat, hue:hue, switch:"on"])
+    def lvl = this.device.currentValue("level") ?: 100
+	setColor([level:lvl, saturation:sat, hue:hue, switch:"on"])
 }
+
 def setLevel(value) {
 	log.trace "setLevel($value)"
-	def duration = (this.device.currentValue("transitionTime") * 10) ?: 32
+	def tt = (this.device.currentValue("transitionTime") ) ?: 3.2
+    Integer duration = tt * 10
+    log.debug "duration = ${duration} / tt = ${tt} "
+    
     state.levelValue = (value==null) ? 100 : value
-	def transitionTime = swapEndianHex(hexF(duration,4))    
+	def transitionTime = swapEndianHex(hexF(duration,4)) 
+    log.debug "transitionTime = ${transitionTime} "
+    
     def cmds = []
 
     if (value == 0) {
@@ -374,7 +411,7 @@ def setLevel(value) {
 
 
     sendEvent(name: "level", value: state.level, isStateChange: true)
-    def scaledLevel = hex(state.levelValue * 255 / 100)
+    def scaledLevel = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
     cmds <<  "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${scaledLevel} ${transitionTime}}"
 
     //log.debug cmds
@@ -391,7 +428,9 @@ def setAdjustedColor(value) {
 def setColor(value){
     log.trace "setColor($value)"
 
-	def duration = (this.device.currentValue("transitionTime") * 10) ?: 32
+	def tt = (this.device.currentValue("transitionTime") ) ?: 3
+    Integer duration = tt * 10
+    
     log.trace "transition time = ${duration / 10} seconds."
     
     def transitionTime = swapEndianHex(hexF(duration,4))
@@ -400,44 +439,46 @@ def setColor(value){
 	if (value.hue == 0 && value.saturation == 0) { setColorTemperature(3500) }
     else if (value.red == 255 && value.blue == 185 && value.green == 255) { setColorTemperature(2700) }
     else {
-    if (value.hex) { sendEvent(name: "color", value: value.hex, displayed:false)}
+    
+    	if (value.hex) { sendEvent(name: "color", value: value.hex, displayed:false)}
 
-    def colorName = getColorName(value.hue)
-    sendEvent(name: "colorName", value: colorName)
-    sendEvent(name: "colorMode", value: "Color")
-    sendEvent(name: "switchColor", value: device.currentValue("colorName"), displayed: false, isStateChange: true)
+	    def colorName = getColorName(value.hue)
+    	sendEvent(name: "colorName", value: colorName, displayed: false, isStateChange: true)
+	    sendEvent(name: "colorMode", value: "Color", displayed: false, isStateChange: true)
+    	sendEvent(name: "switchColor", value: device.currentValue("colorName"), displayed: false, isStateChange: true)
 
-    log.debug "color name is : $colorName"
-    sendEvent(name: "hue", value: value.hue, displayed:true)
-    sendEvent(name: "saturation", value: value.saturation, displayed:true, isStateChange: true)
-    def scaledHueValue = evenHex(Math.round(value.hue * max / 100.0))
-    def scaledSatValue = evenHex(Math.round(value.saturation * max / 100.0))
+	    log.debug "color name is : $colorName"
+    	sendEvent(name: "hue", value: value.hue, displayed:true, isStateChange: true)
+	    sendEvent(name: "saturation", value: value.saturation, displayed:true, isStateChange: true)
+    	def scaledHueValue = evenHex(Math.round(value.hue * max / 100.0))
+	    def scaledSatValue = evenHex(Math.round(value.saturation * max / 100.0))
 
-    def cmd = []
-    if (value.switch != "off" && device.latestValue("switch") == "off") {
-        cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
-        cmd << "delay 150"
-    }
+    	def cmd = []
+	    if (value.switch != "off" && device.latestValue("switch") == "off") {
+    	    cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 1 {}"
+        	cmd << "delay 150"
+	    }
 
-    cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x06 {${scaledHueValue} ${scaledSatValue} ${transitionTime}}"
+    	cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 0x300 0x06 {${scaledHueValue} ${scaledSatValue} ${transitionTime}}"
     
     
-    if (value.level) {
-	    cmd << "delay 150"
-        state.levelValue = value.level
-	    sendEvent(name: "level", value: state.levelValue, isStateChange: true)
-    	def scaledLevel = hex(state.levelValue * 255 / 100)
+	    if (value.level) {
+		    cmd << "delay 150"
+        	state.levelValue = value.level
+		    sendEvent(name: "level", value: state.levelValue, isStateChange: true)
+    		def scaledLevel = hex(state.levelValue * 255 / 100)
 //		sendEvent(name: "level", value: value.level, displayed: true, isStateChange: true)
  //       def level = hex(value.level * 254 / 100)
-		cmd <<  "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${scaledLevel} ${transitionTime}}" 	// "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${level} 1500}"
-    }
+			cmd <<  "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${scaledLevel} ${transitionTime}}" 	// "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${level} 1500}"
+	    }
     
-    if (value.switch == "off") {
-        cmd << "delay 150"
-        cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
-    }
+	    if (value.switch == "off") {
+			off()
+//			cmd << "delay 150"
+//        	cmd << "st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
+	    }
 
-    cmd
+    	cmd
     }
 }
 
@@ -483,7 +524,7 @@ def getColorName(hueValue){
 
     hueValue = Math.round(hueValue / 100 * 360)
 
-    log.debug "hue value (in degrees) is $hueValue."
+    log.debug "hue value (in degrees) is ${hueValue}."
 
     def colorName = "Color Mode"
     if(hueValue>=0 && hueValue <= 4){
@@ -576,11 +617,11 @@ def getColorName(hueValue){
 
 
 private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
+	new Integer(device.endpointId, 16).toString()
 }
 
 private hex(value, width=2) {
-	def s = new BigInteger(Math.round(value).toString()).toString(16)
+	def s = new Integer(Math.round(value).toString()).toString(16)
 	while (s.size() < width) {
 		s = "0" + s
 	}
@@ -588,7 +629,7 @@ private hex(value, width=2) {
 }
 
 private evenHex(value){
-    def s = new BigInteger(Math.round(value).toString()).toString(16)
+    def s = new Integer(Math.round(value).toString()).toString(16)
     while (s.size() % 2 != 0) {
         s = "0" + s
     }
@@ -605,7 +646,7 @@ private byte[] reverseArray(byte[] array) {
 }
 
 private hexF(value, width) {
-	def s = new BigInteger(Math.round(value).toString()).toString(16)
+	def s = new Integer(Math.round(value).toString()).toString(16)
 	while (s.size() < width) {
 		s = "0" + s
 	}
