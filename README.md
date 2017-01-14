@@ -13,3 +13,4 @@ A DTH for US version of Osram GardenSpot Mini rgb lights
  *	 Device Tile also contains buttons for (1) "hueLoop" (boolean "on" / "off" values) and  
  *   (2) "Random Hue" (causes hue to change to a random color).  Use these in CoRE to create color loop.
  
+And, if you feel like making a donation for these community efforts, it would be greatly appreciated: https://www.paypal.me/anthonypastor . Thanks!
